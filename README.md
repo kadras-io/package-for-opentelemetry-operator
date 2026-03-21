@@ -21,6 +21,12 @@ A Carvel package for [OpenTelemetry Operator](https://opentelemetry.io/docs/plat
     -f https://github.com/carvel-dev/kapp-controller/releases/latest/download/release.yml
   ```
 
+### Dependencies
+
+OpenTelemetry Operator requires the following packages included in the Kadras Engineering Platform and available to install from the [Kadras package repository](https://github.com/kadras-io/kadras-packages):
+
+* [cert-manager](https://github.com/kadras-io/package-for-cert-manager). 
+
 ### Installation
 
 Add the Kadras [package repository](https://github.com/kadras-io/kadras-packages) to your Kubernetes cluster:

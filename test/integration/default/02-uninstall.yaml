@@ -1,0 +1,12 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+delete:
+  - apiVersion: opentelemetry.io/v1beta1
+    kind: OpenTelemetryCollector
+    name: otel-collector
+commands:
+  - script: |
+      cd ../../../package && \
+      kubectl config set-context --current --namespace=tests && \
+      ytt -f ../test/integration/default/config -f package-resources.yml | kctrl dev -f- --local --delete -y

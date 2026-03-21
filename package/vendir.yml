@@ -1,0 +1,13 @@
+apiVersion: vendir.k14s.io/v1alpha1
+directories:
+- contents:
+  - githubRelease:
+      disableAutoChecksumValidation: true
+      slug: open-telemetry/opentelemetry-operator
+      tag: v0.147.0
+    includePaths:
+    - opentelemetry-operator.yaml
+    path: .
+  path: config/upstream
+kind: Config
+minimumRequiredVersion: ""

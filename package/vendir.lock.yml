@@ -2,8 +2,8 @@ apiVersion: vendir.k14s.io/v1alpha1
 directories:
 - contents:
   - githubRelease:
-      tag: v0.147.0
-      url: https://api.github.com/repos/open-telemetry/opentelemetry-operator/releases/298390731
+      tag: v0.153.0
+      url: https://api.github.com/repos/open-telemetry/opentelemetry-operator/releases/337117821
     path: .
   path: config/upstream
 kind: LockConfig

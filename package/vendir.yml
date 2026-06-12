@@ -4,7 +4,7 @@ directories:
   - githubRelease:
       disableAutoChecksumValidation: true
       slug: open-telemetry/opentelemetry-operator
-      tag: v0.147.0
+      tag: v0.153.0
     includePaths:
     - opentelemetry-operator.yaml
     path: .

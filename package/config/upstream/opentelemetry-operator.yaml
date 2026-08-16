@@ -3089,6 +3089,13 @@ spec:
                 type: object
               serviceAccount:
                 type: string
+              tls:
+                properties:
+                  insecure:
+                    type: boolean
+                  insecure_skip_verify:
+                    type: boolean
+                type: object
               tolerations:
                 items:
                   properties:
@@ -11641,6 +11648,17 @@ spec:
                 type: string
               serviceName:
                 type: string
+              sessionAffinity:
+                type: string
+              sessionAffinityConfig:
+                properties:
+                  clientIP:
+                    properties:
+                      timeoutSeconds:
+                        format: int32
+                        type: integer
+                    type: object
+                type: object
               shareProcessNamespace:
                 type: boolean
               startupProbe:
@@ -12225,6 +12243,85 @@ spec:
                     properties:
                       enabled:
                         type: boolean
+                      tls:
+                        properties:
+                          certificateAuthorityCertificate:
+                            properties:
+                              configMap:
+                                properties:
+                                  key:
+                                    default: ca.crt
+                                    type: string
+                                  name:
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - name
+                                type: object
+                              secret:
+                                properties:
+                                  key:
+                                    type: string
+                                  name:
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - name
+                                type: object
+                            type: object
+                          clientCertificate:
+                            properties:
+                              certificateSecret:
+                                properties:
+                                  key:
+                                    type: string
+                                  name:
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - name
+                                type: object
+                              keySecret:
+                                properties:
+                                  key:
+                                    type: string
+                                  name:
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - name
+                                type: object
+                            required:
+                            - certificateSecret
+                            - keySecret
+                            type: object
+                          serverCertificate:
+                            properties:
+                              certificateSecret:
+                                properties:
+                                  key:
+                                    type: string
+                                  name:
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - name
+                                type: object
+                              keySecret:
+                                properties:
+                                  key:
+                                    type: string
+                                  name:
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - name
+                                type: object
+                            required:
+                            - certificateSecret
+                            - keySecret
+                            type: object
+                        type: object
                       useCertManager:
                         default: true
                         type: boolean
@@ -13899,8 +13996,47 @@ spec:
                 > 0) || !has(self.additionalContainers)'
           status:
             properties:
+              conditions:
+                items:
+                  properties:
+                    lastTransitionTime:
+                      format: date-time
+                      type: string
+                    message:
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
               image:
                 type: string
+              observedGeneration:
+                format: int64
+                type: integer
               scale:
                 properties:
                   replicas:
@@ -16230,6 +16366,85 @@ spec:
                 properties:
                   enabled:
                     type: boolean
+                  tls:
+                    properties:
+                      certificateAuthorityCertificate:
+                        properties:
+                          configMap:
+                            properties:
+                              key:
+                                default: ca.crt
+                                type: string
+                              name:
+                                minLength: 1
+                                type: string
+                            required:
+                            - name
+                            type: object
+                          secret:
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                minLength: 1
+                                type: string
+                            required:
+                            - name
+                            type: object
+                        type: object
+                      clientCertificate:
+                        properties:
+                          certificateSecret:
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                minLength: 1
+                                type: string
+                            required:
+                            - name
+                            type: object
+                          keySecret:
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                minLength: 1
+                                type: string
+                            required:
+                            - name
+                            type: object
+                        required:
+                        - certificateSecret
+                        - keySecret
+                        type: object
+                      serverCertificate:
+                        properties:
+                          certificateSecret:
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                minLength: 1
+                                type: string
+                            required:
+                            - name
+                            type: object
+                          keySecret:
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                minLength: 1
+                                type: string
+                            required:
+                            - name
+                            type: object
+                        required:
+                        - certificateSecret
+                        - keySecret
+                        type: object
+                    type: object
                   useCertManager:
                     default: true
                     type: boolean
@@ -16856,6 +17071,17 @@ spec:
                 type: object
               serviceAccount:
                 type: string
+              sessionAffinity:
+                type: string
+              sessionAffinityConfig:
+                properties:
+                  clientIP:
+                    properties:
+                      timeoutSeconds:
+                        format: int32
+                        type: integer
+                    type: object
+                type: object
               shareProcessNamespace:
                 type: boolean
               terminationGracePeriodSeconds:
@@ -18024,6 +18250,16 @@ rules:
   - patch
   - update
 - apiGroups:
+  - operators.coreos.com
+  resources:
+  - clusterserviceversions
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - policy
   resources:
   - poddisruptionbudgets
@@ -18214,7 +18450,7 @@ spec:
           value: "true"
         - name: ENABLE_NGINX_AUTO_INSTRUMENTATION
           value: "true"
-        image: ghcr.io/open-telemetry/opentelemetry-operator/opentelemetry-operator:0.153.0
+        image: ghcr.io/open-telemetry/opentelemetry-operator/opentelemetry-operator:0.157.0
         livenessProbe:
           httpGet:
             path: /healthz

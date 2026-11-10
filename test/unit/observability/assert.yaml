@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opentelemetry-operator-controller-manager
+spec:
+  template:
+    metadata:
+      (annotations."prometheus.io/scrape" == null): true
+      (annotations."prometheus.io/port" == null): true
+      (annotations."prometheus.io/scheme" == null): true
+    spec:
+      (containers[?name == 'manager'] | [0]):
+        (args[?starts_with(@, '--zap-log-level=')]): [--zap-log-level=debug]
+        (contains(args, '--zap-encoder=json')): true

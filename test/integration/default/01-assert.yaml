@@ -2,7 +2,22 @@
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
-  name: otel-collector
+  name: otel
 status:
   scale:
     replicas: 1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+status:
+  readyReplicas: 1
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: java-app
+spec:
+  initContainers:
+    - name: opentelemetry-auto-instrumentation-java

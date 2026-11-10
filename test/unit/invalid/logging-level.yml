@@ -1,0 +1,5 @@
+# expected: one of ["debug", "info", "error"]
+---
+observability:
+  logging:
+    level: warn

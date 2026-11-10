@@ -1,0 +1,15 @@
+---
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel
+status:
+  scale:
+    replicas: 1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+status:
+  readyReplicas: 1

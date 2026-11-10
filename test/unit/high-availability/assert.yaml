@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opentelemetry-operator-controller-manager
+spec:
+  replicas: 3
+  template:
+    spec:
+      # The replicas are spread across nodes when possible.
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: opentelemetry-operator
+                  control-plane: controller-manager
+---
+# The standby replicas wait for the leader election.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opentelemetry-operator-config
+data:
+  (parse_yaml("config.yaml")):
+    enable-leader-election: true
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: opentelemetry-operator-controller-manager
+  namespace: opentelemetry-operator-system
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: opentelemetry-operator
+      control-plane: controller-manager

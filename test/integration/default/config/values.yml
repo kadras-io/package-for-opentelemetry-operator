@@ -6,4 +6,4 @@ metadata:
   namespace: tests
 stringData:
   values.yaml: |
-    # Default values
+    # Default configuration

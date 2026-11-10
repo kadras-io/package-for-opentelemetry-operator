@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opentelemetry-operator-config
+data:
+  (parse_yaml("config.yaml")):
+    collector-image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.162.0
+    feature-gates: operator.networkpolicy
+    metrics-secure: false
+    metrics-addr: ":8080"
+    enable-leader-election: true
+    (contains(keys(@), 'enable-multi-instrumentation')): false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opentelemetry-operator-controller-manager
+spec:
+  template:
+    metadata:
+      annotations:
+        # The scraping annotations follow the metrics configuration.
+        prometheus.io/port: "8080"
+        prometheus.io/scheme: http
+    spec:
+      (containers[?name == 'manager'] | [0]):
+        args:
+        - --zap-log-level=debug
+        - --config-file=/conf/config.yaml
+        - --zap-encoder=json
+        - --watch-namespace=observability,apps
+        - --zap-level-key=severity

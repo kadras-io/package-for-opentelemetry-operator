@@ -1,0 +1,50 @@
+---
+# A collector receiving traces via OTLP, in the namespace of the test.
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel
+spec:
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+    processors:
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 15
+    exporters:
+      debug: {}
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter]
+          exporters: [debug]
+---
+# The Java auto-instrumentation, exporting to the collector.
+apiVersion: opentelemetry.io/v1alpha1
+kind: Instrumentation
+metadata:
+  name: java
+spec:
+  exporter:
+    endpoint: http://otel-collector:4318
+---
+# A Pod annotated for Java auto-instrumentation. The operator injects the agent via its Pod admission webhook.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: java-app
+  annotations:
+    instrumentation.opentelemetry.io/inject-java: "true"
+spec:
+  containers:
+    - name: app
+      image: busybox:1.37
+      command: ["sleep", "3600"]

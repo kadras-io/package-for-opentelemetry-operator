@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opentelemetry-operator-controller-manager
+  namespace: observability
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opentelemetry-operator-config
+  namespace: observability
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opentelemetry-operator-webhook-service
+  namespace: observability
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: opentelemetry-operator-selfsigned-issuer
+  namespace: observability
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: opentelemetry-operator-serving-cert
+  namespace: observability
+spec:
+  dnsNames:
+  - opentelemetry-operator-webhook-service.observability.svc
+  - opentelemetry-operator-webhook-service.observability.svc.cluster.local
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: opentelemetry-operator-manager-rolebinding
+(subjects[?namespace != 'observability'] | length(@)): 0
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: opentelemetry-operator-leader-election-rolebinding
+  namespace: observability
+(subjects[?namespace != 'observability'] | length(@)): 0
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: opentelemetry-operator-mutating-webhook-configuration
+  annotations:
+    cert-manager.io/inject-ca-from: observability/opentelemetry-operator-serving-cert
+(webhooks[?clientConfig.service.namespace != 'observability'] | length(@)): 0
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: opentelemetry-operator-validating-webhook-configuration
+  annotations:
+    cert-manager.io/inject-ca-from: observability/opentelemetry-operator-serving-cert
+(webhooks[?clientConfig.service.namespace != 'observability'] | length(@)): 0
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: opentelemetrycollectors.opentelemetry.io
+  annotations:
+    cert-manager.io/inject-ca-from: observability/opentelemetry-operator-serving-cert
+spec:
+  conversion:
+    webhook:
+      clientConfig:
+        service:
+          namespace: observability
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: canonical-registry-credentials
+  namespace: observability

@@ -1,0 +1,4 @@
+# expected: expected: boolean
+---
+auto_instrumentation:
+  java: "yes"

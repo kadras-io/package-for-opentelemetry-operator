@@ -1,0 +1,23 @@
+---
+# Uninstalling the package keeps the CustomResourceDefinitions, the namespace, and the collectors.
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: opentelemetrycollectors.opentelemetry.io
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: opentelemetry-operator-system
+---
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+status:
+  readyReplicas: 1

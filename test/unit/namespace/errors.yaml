@@ -1,0 +1,45 @@
+# No resource left in the upstream namespace.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: opentelemetry-operator-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: opentelemetry-operator-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: opentelemetry-operator-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: opentelemetry-operator-system
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: opentelemetry-operator-system
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: opentelemetry-operator-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: opentelemetry-operator-system
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  namespace: opentelemetry-operator-system
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  namespace: opentelemetry-operator-system

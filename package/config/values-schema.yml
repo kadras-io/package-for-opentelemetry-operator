@@ -1,0 +1,67 @@
+#@ load("/lib/validation.star", "is_dns_label")
+
+#@data/values-schema
+---
+
+#@schema/desc "The namespace in which to deploy the OpenTelemetry Operator."
+#@schema/validation ("a valid DNS label", is_dns_label), min_len=1, max_len=63
+namespace: opentelemetry-operator-system
+
+#! =============================================
+#! Operator
+#! =============================================
+
+#@schema/desc "The number of operator replicas. Additional replicas are standby via leader election, and all of them serve the admission webhooks. With more than 1 replica, a PodDisruptionBudget is created."
+#@schema/validation min=1
+replicas: 1
+
+#@schema/desc "Container flags, merged on top of the ones computed by the package. Set a flag to null to remove it. See https://github.com/open-telemetry/opentelemetry-operator/blob/main/docs/reference/configuration.md."
+#@schema/examples ("Watched namespaces", {"watch-namespace": "observability,apps"})
+#@schema/type any=True
+args: {}
+
+#@schema/desc "Operator configuration file, merged on top of the one computed by the package. Set an option to null to remove it. See https://github.com/open-telemetry/opentelemetry-operator/blob/main/docs/reference/configuration.md."
+#@schema/examples ("Default collector image", {"collector-image": "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.162.0"}), ("Feature gates", {"feature-gates": "operator.networkpolicy"})
+#@schema/type any=True
+config: {}
+
+#! =============================================
+#! Auto-instrumentation
+#! =============================================
+
+#@schema/desc "The languages that the Instrumentation resources can instrument, by injecting the OpenTelemetry instrumentation libraries in the Pods."
+auto_instrumentation:
+  #@schema/desc "Whether to support Apache HTTPD auto-instrumentation."
+  apache_httpd: true
+  #@schema/desc "Whether to support .NET auto-instrumentation."
+  dotnet: true
+  #@schema/desc "Whether to support Go auto-instrumentation. It injects a privileged sidecar container, which the `baseline` and `restricted` Pod Security Standards reject."
+  go: false
+  #@schema/desc "Whether to support Java auto-instrumentation."
+  java: true
+  #@schema/desc "Whether to support Nginx auto-instrumentation."
+  nginx: true
+  #@schema/desc "Whether to support Node.js auto-instrumentation."
+  nodejs: true
+  #@schema/desc "Whether to support PHP auto-instrumentation."
+  php: false
+  #@schema/desc "Whether to support Python auto-instrumentation."
+  python: true
+  #@schema/desc "Whether to support Ruby auto-instrumentation."
+  ruby: false
+  #@schema/desc "Whether to support instrumenting the containers of the same Pod with different languages."
+  multi_instrumentation: true
+
+#! =============================================
+#! Observability
+#! =============================================
+
+#@schema/desc "Settings for logs and metrics."
+observability:
+  logging:
+    #@schema/desc "The log level of the operator. The logs are always in JSON format."
+    #@schema/validation one_of=["debug", "info", "error"]
+    level: info
+  metrics:
+    #@schema/desc "Whether to annotate the operator Pods for Prometheus scraping. The operator exposes metrics on port 8443 (`/metrics`), over HTTPS and with authentication, unless configured otherwise via `config`."
+    enabled: true

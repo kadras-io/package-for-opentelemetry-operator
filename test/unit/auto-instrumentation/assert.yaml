@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opentelemetry-operator-config
+data:
+  (parse_yaml("config.yaml")):
+    enable-multi-instrumentation: false
+    enable-apache-httpd-instrumentation: true
+    enable-go-auto-instrumentation: true
+    enable-java-auto-instrumentation: false
+    enable-nginx-auto-instrumentation: false
+    enable-node-js-auto-instrumentation: true

@@ -1,0 +1,19 @@
+#@ load("@ytt:overlay", "overlay")
+
+#! Deleting the CustomResourceDefinitions deletes all the OpenTelemetryCollector, Instrumentation, TargetAllocator,
+#! and OpAMPBridge resources, and with them the collectors they own: the telemetry pipelines stop, and the new Pods
+#! aren't instrumented anymore. Instead, uninstalling the package keeps the CustomResourceDefinitions and the namespace:
+#! the operator and its webhooks are deleted, and the collectors keep running, waiting for the operator to be installed again.
+#! To remove the OpenTelemetry resources too, delete them before uninstalling the package (see docs/upgrade.md).
+#! When the package is installed again, kapp updates the resources it left behind instead of failing because they already exist.
+#! See: https://carvel.dev/kapp/docs/latest/apply/
+
+#@overlay/match by=overlay.or_op(overlay.subset({"kind":"CustomResourceDefinition"}), overlay.subset({"kind":"Namespace"})), expects="1+"
+---
+metadata:
+  #@overlay/match missing_ok=True
+  annotations:
+    #@overlay/match missing_ok=True
+    kapp.k14s.io/delete-strategy: orphan
+    #@overlay/match missing_ok=True
+    kapp.k14s.io/create-strategy: fallback-on-update

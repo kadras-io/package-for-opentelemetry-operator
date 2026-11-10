@@ -1,0 +1,3 @@
+# A single replica, without a PodDisruptionBudget.
+apiVersion: policy/v1
+kind: PodDisruptionBudget

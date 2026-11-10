@@ -1,0 +1,26 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:overlay", "overlay")
+#@ load("/lib/otel.star", "deployment", "metrics_port", "metrics_secure")
+
+#! The operator exposes metrics in the Prometheus format on port 8443 (`/metrics`). By default, they're served over HTTPS,
+#! with a self-signed certificate, and only to the clients authorized via the `opentelemetry-operator-metrics-reader` ClusterRole.
+#! The port and the protocol follow the `metrics-addr` and `metrics-secure` options of the configuration.
+#! The log level and format are set via flags (see lib/otel.star).
+
+#@ if data.values.observability.metrics.enabled:
+#@overlay/match by=overlay.subset({"kind":"Deployment", "metadata":{"name":deployment}})
+---
+spec:
+  template:
+    metadata:
+      #@overlay/match missing_ok=True
+      annotations:
+        #@overlay/match missing_ok=True
+        prometheus.io/scrape: "true"
+        #@overlay/match missing_ok=True
+        prometheus.io/port: #@ metrics_port()
+        #@overlay/match missing_ok=True
+        prometheus.io/path: /metrics
+        #@overlay/match missing_ok=True
+        prometheus.io/scheme: #@ "https" if metrics_secure() else "http"
+#@ end

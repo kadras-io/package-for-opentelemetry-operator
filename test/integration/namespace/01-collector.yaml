@@ -1,8 +1,9 @@
 ---
+# The admission and conversion webhooks are served from the custom namespace.
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
-  name: otel-collector
+  name: otel
 spec:
   config:
     receivers:
@@ -10,20 +11,10 @@ spec:
         protocols:
           grpc:
             endpoint: 0.0.0.0:4317
-          http:
-            endpoint: 0.0.0.0:4318
-    processors:
-      memory_limiter:
-        check_interval: 1s
-        limit_percentage: 75
-        spike_limit_percentage: 15
-
     exporters:
       debug: {}
-
     service:
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [memory_limiter]
           exporters: [debug]

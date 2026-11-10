@@ -1,0 +1,92 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:overlay", "overlay")
+#@ load("/lib/otel.star", "args_merger", "config_dir", "config_file", "config_name", "deployment", "env_filter", "operator_args", "operator_config_checksum", "operator_config_file", "selector")
+
+#! The operator is configured via a configuration file, environment variables, and flags, applied in this order.
+#! The configuration file computed from the package values is merged with `config`, and mounted from a ConfigMap.
+#! The upstream environment variables overriding it are removed, and their values moved to the file.
+#! The flags computed from the package values are merged into the upstream ones, then `args` is merged on top.
+#! The checksum of the configuration rolls out the operator when it changes, and kapp applies it before the operator starts.
+#! See: https://github.com/open-telemetry/opentelemetry-operator/blob/main/docs/reference/configuration.md
+
+#@ config_group = "opentelemetry-operator.packages.kadras.io/config"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: #@ config_name
+  namespace: #@ data.values.namespace
+  annotations:
+    kapp.k14s.io/change-group: #@ config_group
+data:
+  #@yaml/text-templated-strings
+  (@= config_file @): #@ operator_config_file()
+
+#@overlay/match by=overlay.subset({"kind":"Deployment", "metadata":{"name":deployment}})
+---
+metadata:
+  #@overlay/match missing_ok=True
+  annotations:
+    #@overlay/match missing_ok=True
+    kapp.k14s.io/change-rule: #@ "upsert after upserting " + config_group
+spec:
+  replicas: #@ data.values.replicas
+  template:
+    metadata:
+      #@overlay/match missing_ok=True
+      annotations:
+        #@overlay/match missing_ok=True
+        kadras.io/config-checksum: #@ operator_config_checksum()
+    spec:
+      containers:
+        #@overlay/match by="name"
+        - name: manager
+          #@overlay/replace via=args_merger(operator_args())
+          args:
+          #@overlay/replace via=env_filter()
+          env:
+          #! The images are referenced by digest, so they don't change between restarts.
+          #@overlay/match missing_ok=True
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: config
+              mountPath: #@ config_dir
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: #@ config_name
+
+#! The operator runs with leader election: additional replicas are standby, and all of them serve the admission webhooks.
+#! With more than one replica, they're spread across nodes when possible, and a PodDisruptionBudget evicts one at a time.
+#! See: https://github.com/open-telemetry/opentelemetry-operator/blob/main/docs/rfcs/webhook-high-availability.md
+
+#@ if data.values.replicas > 1:
+#@overlay/match by=overlay.subset({"kind":"Deployment", "metadata":{"name":deployment}})
+---
+spec:
+  template:
+    spec:
+      #@overlay/match missing_ok=True
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels: #@ selector
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: #@ deployment
+  namespace: #@ data.values.namespace
+  labels: #@ selector
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels: #@ selector
+#@ end

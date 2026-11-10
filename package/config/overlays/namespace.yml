@@ -1,0 +1,65 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:overlay", "overlay")
+#@ load("/lib/otel.star", "certificate", "webhook_service")
+
+#! The operator runs in the package namespace. It reads it from the `NAMESPACE` environment variable,
+#! but the upstream manifest references it in the role bindings, in the admission and conversion webhooks,
+#! in the cert-manager CA injection, and in the webhook certificate.
+
+#@ upstream = "opentelemetry-operator-system"
+#@ namespace = data.values.namespace
+
+#@overlay/match by=overlay.subset({"kind":"Namespace", "metadata":{"name":upstream}})
+---
+metadata:
+  name: #@ namespace
+
+#@overlay/match by=overlay.subset({"metadata":{"namespace":upstream}}), expects="1+"
+---
+metadata:
+  namespace: #@ namespace
+
+#@ cluster_role_bindings = overlay.subset({"kind":"ClusterRoleBinding"})
+#@ role_bindings = overlay.subset({"kind":"RoleBinding"})
+
+#@overlay/match by=overlay.or_op(cluster_role_bindings, role_bindings), expects="1+"
+---
+subjects:
+#@overlay/match by=overlay.subset({"kind":"ServiceAccount"}), expects="1+"
+- namespace: #@ namespace
+
+#@ mutating_webhooks = overlay.subset({"kind":"MutatingWebhookConfiguration"})
+#@ validating_webhooks = overlay.subset({"kind":"ValidatingWebhookConfiguration"})
+
+#@overlay/match by=overlay.or_op(mutating_webhooks, validating_webhooks), expects=2
+---
+webhooks:
+#@overlay/match by=overlay.all, expects="1+"
+- clientConfig:
+    service:
+      namespace: #@ namespace
+
+#! The OpenTelemetryCollector resources are converted between API versions by the operator.
+#@overlay/match by=overlay.subset({"kind":"CustomResourceDefinition", "spec":{"conversion":{"strategy":"Webhook"}}}), expects="1+"
+---
+spec:
+  conversion:
+    webhook:
+      clientConfig:
+        service:
+          namespace: #@ namespace
+
+#! cert-manager injects the CA of the webhook certificate into the webhook configurations and the CRDs.
+#@overlay/match by=overlay.subset({"metadata":{"annotations":{"cert-manager.io/inject-ca-from":upstream + "/" + certificate}}}), expects="3+"
+---
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: #@ namespace + "/" + certificate
+
+#@overlay/match by=overlay.subset({"kind":"Certificate", "metadata":{"name":certificate}})
+---
+spec:
+  #@overlay/replace
+  dnsNames:
+    - #@ webhook_service + "." + namespace + ".svc"
+    - #@ webhook_service + "." + namespace + ".svc.cluster.local"

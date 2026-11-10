@@ -1,0 +1,6 @@
+---
+auto_instrumentation:
+  go: true
+  java: false
+  nginx: false
+  multi_instrumentation: false

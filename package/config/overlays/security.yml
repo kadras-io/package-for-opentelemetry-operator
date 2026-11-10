@@ -1,0 +1,39 @@
+#@ load("@ytt:overlay", "overlay")
+#@ load("/lib/otel.star", "deployment")
+
+#! The operator complies with the "restricted" Pod Security Standard, enforced on the package namespace.
+#! The upstream manifest doesn't set the security context, so the package does. The image runs as a non-root user.
+#! See: https://kubernetes.io/docs/concepts/security/pod-security-standards/
+
+#@overlay/match by=overlay.subset({"kind":"Namespace"})
+---
+metadata:
+  #@overlay/match missing_ok=True
+  labels:
+    #@overlay/match missing_ok=True
+    pod-security.kubernetes.io/enforce: restricted
+    #@overlay/match missing_ok=True
+    pod-security.kubernetes.io/audit: restricted
+    #@overlay/match missing_ok=True
+    pod-security.kubernetes.io/warn: restricted
+
+#@overlay/match by=overlay.subset({"kind":"Deployment", "metadata":{"name":deployment}})
+---
+spec:
+  template:
+    spec:
+      #@overlay/match missing_ok=True
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        #@overlay/match by="name"
+        - name: manager
+          #@overlay/match missing_ok=True
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL

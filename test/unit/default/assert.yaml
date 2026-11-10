@@ -1,0 +1,151 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: opentelemetry-operator-system
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+  annotations:
+    # Uninstalling the package keeps the namespace, and installing it again adopts it.
+    kapp.k14s.io/delete-strategy: orphan
+    kapp.k14s.io/create-strategy: fallback-on-update
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: opentelemetrycollectors.opentelemetry.io
+  annotations:
+    # Deleting the CRDs would delete all the collectors.
+    kapp.k14s.io/delete-strategy: orphan
+    kapp.k14s.io/create-strategy: fallback-on-update
+    cert-manager.io/inject-ca-from: opentelemetry-operator-system/opentelemetry-operator-serving-cert
+spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        service:
+          name: opentelemetry-operator-webhook-service
+          namespace: opentelemetry-operator-system
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: instrumentations.opentelemetry.io
+  annotations:
+    kapp.k14s.io/delete-strategy: orphan
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opentelemetry-operator-config
+  namespace: opentelemetry-operator-system
+  annotations:
+    kapp.k14s.io/change-group: opentelemetry-operator.packages.kadras.io/config
+data:
+  (parse_yaml("config.yaml")):
+    enable-leader-election: true
+    metrics-addr: ":8443"
+    metrics-secure: true
+    enable-multi-instrumentation: true
+    enable-apache-httpd-instrumentation: true
+    enable-dot-net-auto-instrumentation: true
+    enable-go-auto-instrumentation: false
+    enable-java-auto-instrumentation: true
+    enable-nginx-auto-instrumentation: true
+    enable-node-js-auto-instrumentation: true
+    enable-php-auto-instrumentation: false
+    enable-python-auto-instrumentation: true
+    enable-ruby-auto-instrumentation: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opentelemetry-operator-controller-manager
+  namespace: opentelemetry-operator-system
+  annotations:
+    kapp.k14s.io/change-rule: upsert after upserting opentelemetry-operator.packages.kadras.io/config
+spec:
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8443"
+        prometheus.io/path: /metrics
+        prometheus.io/scheme: https
+        (length("kadras.io/config-checksum")): 64
+    spec:
+      (affinity == null): true
+      imagePullSecrets:
+      - name: canonical-registry-credentials
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      (volumes[?name == 'config'] | [0].configMap.name): opentelemetry-operator-config
+      (containers[?name == 'manager'] | [0]):
+        image: ghcr.io/open-telemetry/opentelemetry-operator/opentelemetry-operator:0.162.0
+        imagePullPolicy: IfNotPresent
+        args:
+        - --zap-log-level=info
+        - --zap-time-encoding=rfc3339nano
+        - --config-file=/conf/config.yaml
+        - --zap-encoder=json
+        # The upstream environment variables overriding the configuration file are removed.
+        (env[*].name): [SERVICE_ACCOUNT_NAME, NAMESPACE]
+        (volumeMounts[?name == 'config'] | [0].mountPath): /conf
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: [ALL]
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: opentelemetry-operator-serving-cert
+  namespace: opentelemetry-operator-system
+spec:
+  dnsNames:
+  - opentelemetry-operator-webhook-service.opentelemetry-operator-system.svc
+  - opentelemetry-operator-webhook-service.opentelemetry-operator-system.svc.cluster.local
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opentelemetry-operator-webhook-service
+  namespace: opentelemetry-operator-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: opentelemetry-operator-manager-rolebinding
+subjects:
+- kind: ServiceAccount
+  name: opentelemetry-operator-controller-manager
+  namespace: opentelemetry-operator-system
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: opentelemetry-operator-mutating-webhook-configuration
+  annotations:
+    cert-manager.io/inject-ca-from: opentelemetry-operator-system/opentelemetry-operator-serving-cert
+(webhooks[?clientConfig.service.namespace != 'opentelemetry-operator-system'] | length(@)): 0
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: opentelemetry-operator-validating-webhook-configuration
+  annotations:
+    cert-manager.io/inject-ca-from: opentelemetry-operator-system/opentelemetry-operator-serving-cert
+(webhooks[?clientConfig.service.namespace != 'opentelemetry-operator-system'] | length(@)): 0
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: canonical-registry-credentials
+  namespace: opentelemetry-operator-system
+  annotations:
+    secretgen.carvel.dev/image-pull-secret: ""
+type: kubernetes.io/dockerconfigjson

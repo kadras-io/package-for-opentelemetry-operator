@@ -1,0 +1,7 @@
+---
+# The operator is deleted.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opentelemetry-operator-controller-manager
+  namespace: opentelemetry-operator-system

@@ -15,6 +15,7 @@ A Carvel package for [OpenTelemetry Operator](https://opentelemetry.io/docs/plat
 * **Safe lifecycle**. Uninstalling the package keeps the OpenTelemetry CRDs, so the collectors and the instrumentation settings survive it.
 * **Observability**. Structured JSON logs, and metrics annotated for Prometheus scraping.
 * **Security**. The operator complies with the `restricted` [Pod Security Standard](https://kubernetes.io/docs/concepts/security/pod-security-standards/), enforced on its namespace. Private registries are supported for the operator image.
+* **Access**. The Kubernetes default roles are extended with the OpenTelemetry Operator resources: `edit` and `admin` manage the OpenTelemetry collectors and the auto-instrumentation of a namespace, while `view` reads them. See [docs/rbac.md](docs/rbac.md).
 
 ## 🚀&nbsp; Getting Started
 
@@ -137,6 +138,7 @@ Features:
 * [High availability](docs/high-availability.md)
 * [Observability](docs/observability.md)
 * [Security](docs/security.md)
+* [Access to the resources](docs/rbac.md)
 
 Operations:
 

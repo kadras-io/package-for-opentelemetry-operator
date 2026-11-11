@@ -21,3 +21,12 @@ metadata:
 spec:
   initContainers:
     - name: opentelemetry-auto-instrumentation-java
+---
+# The `edit` role manages the resources, and the `view` role reads them.
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+  - script: test "$(kubectl auth can-i create instrumentations.opentelemetry.io -n $NAMESPACE --as=developer)" = yes
+  - script: test "$(kubectl auth can-i delete instrumentations.opentelemetry.io -n $NAMESPACE --as=developer)" = yes
+  - script: test "$(kubectl auth can-i list instrumentations.opentelemetry.io -n $NAMESPACE --as=viewer)" = yes
+  - script: test "$(kubectl auth can-i create instrumentations.opentelemetry.io -n $NAMESPACE --as=viewer)" = no

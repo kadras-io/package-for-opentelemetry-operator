@@ -149,3 +149,20 @@ metadata:
   annotations:
     secretgen.carvel.dev/image-pull-secret: ""
 type: kubernetes.io/dockerconfigjson
+
+---
+# The OpenTelemetry Operator resources are added to the Kubernetes default roles.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: opentelemetry-operator-edit
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: opentelemetry-operator-view
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
